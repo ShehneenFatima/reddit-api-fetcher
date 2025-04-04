@@ -2,18 +2,30 @@ import praw
 import argparse
 import csv
 import os
+from dotenv import load_dotenv
 from fpdf import FPDF
+
+# Load environment variables
+load_dotenv()
+
+# Fetch Reddit API credentials from environment variables
+client_id = os.getenv('REDDIT_CLIENT_ID')
+client_secret = os.getenv('REDDIT_CLIENT_SECRET')
+user_agent = os.getenv('REDDIT_USER_AGENT')
+
+# Define upper limits for score and limit
+MAX_SCORE = 1000000  # Adjust as needed
+MAX_LIMIT = 100  # Adjust as needed
 
 # Function to fetch posts based on subreddit, score, type, and limit
 def fetch_posts(subreddit, score, post_type, limit):
-    reddit = praw.Reddit(client_id='4lkm0hUSq7LG-y7UOVplOQ',
-                         client_secret='3-IwnCxeL4Q49559BfBbGEIt08kArw',
-                         user_agent='YourAppNameHere')
+    reddit = praw.Reddit(client_id=client_id,
+                         client_secret=client_secret,
+                         user_agent=user_agent)
 
-    # Get the subreddit
     subreddit = reddit.subreddit(subreddit)
 
-    # Fetch posts based on the type
+    # Fetch posts based on type
     if post_type == 'hot':
         posts = subreddit.hot(limit=limit)
     elif post_type == 'new':
@@ -27,7 +39,8 @@ def fetch_posts(subreddit, score, post_type, limit):
 
     filtered_posts = []
     for post in posts:
-        if post.score >= score:
+        # Filter posts based on score less than or equal to the given score
+        if post.score <= score:
             filtered_posts.append({
                 'title': post.title,
                 'score': post.score,
@@ -78,19 +91,23 @@ def generate_pdf(posts, path):
 def parse_args():
     parser = argparse.ArgumentParser(description="Fetch Reddit posts")
     parser.add_argument('--subreddit', type=str, required=True, help="Subreddit to fetch posts from")
-    parser.add_argument('--score', type=int, required=True, help="Minimum score of the posts")
+    parser.add_argument('--score', type=int, required=True, help="Maximum score of the posts")
     parser.add_argument('--limit', type=int, required=True, help="Number of posts to fetch")
     parser.add_argument('--type', type=str, choices=['hot', 'new', 'top', 'rising'], default='hot', help="Type of posts to fetch")
     parser.add_argument('--path', type=str, required=True, help="Path to store the files (CSV, PDF)")
 
     args = parser.parse_args()
 
-    # Validate score and limit to ensure positive values
-    if args.score < 0:
-        raise ValueError("Score must be a non-negative integer")
-    if args.limit <= 0:
-        raise ValueError("Limit must be a positive integer")
+    # Validate score and limit to ensure positive values and within upper limits
+    if args.score < 0 or args.score > MAX_SCORE:
+        raise ValueError(f"Score must be a non-negative integer and less than or equal to {MAX_SCORE}")
+    if args.limit <= 0 or args.limit > MAX_LIMIT:
+        raise ValueError(f"Limit must be a positive integer and less than or equal to {MAX_LIMIT}")
 
+    # Validate if the path exists
+    if not os.path.exists(args.path):
+        raise FileNotFoundError(f"The specified path {args.path} does not exist.")
+    
     return args
 
 # Main function
@@ -98,7 +115,7 @@ def main():
     args = parse_args()
     
     # Fetch posts
-    print(f"Fetching posts from r/{args.subreddit} with a score greater than or equal to {args.score}")
+    print(f"Fetching posts from r/{args.subreddit} with a score less than or equal to {args.score}")
     posts = fetch_posts(args.subreddit, args.score, args.type, args.limit)
     
     # Check if any posts are found
