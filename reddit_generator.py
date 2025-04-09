@@ -1,4 +1,5 @@
 import os
+
 import praw
 from dotenv import load_dotenv
 
@@ -12,10 +13,9 @@ USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
 # Reddit API connection using PRAW
 reddit = praw.Reddit(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    user_agent=USER_AGENT
+    client_id=CLIENT_ID, client_secret=CLIENT_SECRET, user_agent=USER_AGENT
 )
+
 
 def fetch_posts(subreddit_name, post_limit=10):
     """
@@ -23,6 +23,7 @@ def fetch_posts(subreddit_name, post_limit=10):
     """
     subreddit = reddit.subreddit(subreddit_name)
     return subreddit.hot(limit=post_limit)
+
 
 def filter_posts(posts, min_score=50):
     """
