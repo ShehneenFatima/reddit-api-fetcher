@@ -40,8 +40,8 @@ def fetch_posts(subreddit, score, post_type, limit):
 
     filtered_posts = []
     for post in posts:
-        # Filter posts based on score less than or equal to the given score
-        if post.score <= score:
+        # Filter posts based on score and number of comments
+        if post.score <= score and post.num_comments > 100:
             filtered_posts.append(
                 {
                     "title": post.title,
